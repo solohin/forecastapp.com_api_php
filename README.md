@@ -1,8 +1,10 @@
 # forecastapp.com API PHP
 Simple API client for forecastapp.com
 
-    $api = new \pro\data5\ForecastAppAPI('testmail@gmail.com', 'mylongpass', APP_ID);
-    
+    $forecastAPI = new \pro\data5\ForecastAppAPI('testmail@gmail.com', 'mylongpass', APP_ID);
+    $usersList = $forecastAPI->people();
+    var_dump($usersList);
+
     
 ![App ID is in your URL](where_is_id.png)
 
