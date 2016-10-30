@@ -15,24 +15,34 @@ class ForecastAppAPI
     const BASE_PATH = 'https://api.forecastapp.com/';
 
     private $curl;
-    private $token;
+    private $token = null;
     private $accountID;
 
-    public function __construct($login, $password, $accountId)
+    public function __construct($login, $password, $accountId, $oldToken = null)
     {
         $this->curl = curl_init();
         curl_setopt($this->curl, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($this->curl, CURLOPT_COOKIEJAR, '/dev/null'); //Saves cookies in memory
 
-        $this->token = $this->requestToken($login, $password, $accountId);
+        if ($oldToken === null) {
+            $this->token = $this->requestToken($login, $password, $accountId);
+        } else {
+            $this->token = $oldToken;
+        }
+
         $this->accountID = $accountId;
+    }
+
+    public function getToken()
+    {
+        return $this->token;
     }
 
     public function people()
     {
         $data = $this->APIGet('people')['people'];
         $result = [];
-        foreach($data as $item){
+        foreach ($data as $item) {
             $item['updated_at'] = (new \DateTime($item['updated_at']))->format('d.m.Y');
             $result[] = $item;
         }
