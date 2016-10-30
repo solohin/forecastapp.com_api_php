@@ -12,8 +12,11 @@ use \Exception;
 
 class ForecastAppAPI
 {
+    const BASE_PATH = 'https://api.forecastapp.com/';
+
     private $curl;
     private $token;
+    private $accountID;
 
     public function __construct($login, $password, $accountId)
     {
@@ -21,13 +24,35 @@ class ForecastAppAPI
         curl_setopt($this->curl, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($this->curl, CURLOPT_COOKIEJAR, '/dev/null'); //Saves cookies in memory
 
-
-        $this->token = $this->getToken($login, $password, $accountId);
+        $this->token = $this->requestToken($login, $password, $accountId);
+        $this->accountID = $accountId;
     }
 
-    public function assignments($startDate, $endDate, $active)
+    public function people()
     {
+        $data = $this->APIGet('people')['people'];
+        $result = [];
+        foreach($data as $item){
+            $item['updated_at'] = (new \DateTime($item['updated_at']))->format('d.m.Y');
+            $result[] = $item;
+        }
+        return $result;
+    }
 
+    private function APIGet($path, $params = [])
+    {
+        $headers = [
+            'Authorization: Bearer ' . $this->token,
+            'Forecast-Account-ID: ' . $this->accountID,
+        ];
+
+        $url = self::BASE_PATH . $path;
+        if (!empty($params)) {
+            $url .= '?' . http_build_query($params);
+        }
+
+        $data = json_decode($this->GETRequest($url, false, $headers), 1);
+        return $data;
     }
 
     public function __destruct()
@@ -35,7 +60,7 @@ class ForecastAppAPI
         curl_close($this->curl);
     }
 
-    private function getToken($login, $password, $accountId)
+    private function requestToken($login, $password, $accountId)
     {
         //Get token for form
         $loginForm = $this->GETRequest("https://id.getharvest.com/forecast/sign_in");
@@ -69,22 +94,24 @@ class ForecastAppAPI
         }
     }
 
-    private function GETRequest($url, $followRedirects = true)
+    private function GETRequest($url, $followRedirects = true, $headers = [])
     {
         curl_setopt($this->curl, CURLOPT_URL, $url);
         curl_setopt($this->curl, CURLOPT_POST, 0);
         curl_setopt($this->curl, CURLOPT_FOLLOWLOCATION, $followRedirects);
+        curl_setopt($this->curl, CURLOPT_HTTPHEADER, $headers);
 
         $output = curl_exec($this->curl);
         return $output;
     }
 
-    private function POSTRequest($url, $data, $followRedirects = true)
+    private function POSTRequest($url, $data, $followRedirects = true, $headers = [])
     {
         curl_setopt($this->curl, CURLOPT_URL, $url);
         curl_setopt($this->curl, CURLOPT_POST, 1);
         curl_setopt($this->curl, CURLOPT_POSTFIELDS, http_build_query($data));
         curl_setopt($this->curl, CURLOPT_FOLLOWLOCATION, $followRedirects);
+        curl_setopt($this->curl, CURLOPT_HTTPHEADER, $headers);
 
         $output = curl_exec($this->curl);
         return $output;
